@@ -1,11 +1,21 @@
-#!/bin/bash
-# 5-is_the_host_on_the_network
+#!/usr/bin/env bash
 
-# Check if an argument is provided
-if [ $# -ne 1 ]; then
+# This script checks if a host is reachable on the network using the ping command.
+# It requires an IP address or hostname as an argument.
+
+# Check if an argument was passed
+if [ -z "$1" ]; then
     echo "Usage: 5-is_the_host_on_the_network {IP_ADDRESS}"
     exit 1
 fi
 
-# Ping the IP address 5 times, properly quoted
-ping -c 5 "$1"
+IP_ADDRESS=$1
+COUNT=5
+
+# Ping the specified IP address.
+# The -c flag specifies the number of packets to send (5 times).
+ping -c $COUNT "$IP_ADDRESS"
+
+# Exit status of ping is usually 0 if successful (at least one packet received),
+# or non-zero if the ping fails completely (1 or 2).
+# We rely on the ping command to print its own output as required.
