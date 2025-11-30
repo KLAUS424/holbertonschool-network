@@ -1,45 +1,21 @@
 #!/usr/bin/env bash
-# This script modifies the /etc/hosts file by performing robust edits
-# to avoid environment-specific issues with 'sed -i'.
-# This operation requires root privileges (sudo) to run successfully.
+# 0-change_your_home_IP
 
-HOSTS_FILE="/etc/hosts"
-NEW_LOCALHOST_IP="127.0.0.2"
-NEW_LOCALHOST_NAME="localhost"
-NEW_FACEBOOK_IP="8.8.8.8"
-NEW_FACEBOOK_NAME="facebook.com"
-
-# Create a temporary file to store the modified hosts content
-TEMP_FILE=$(mktemp)
-if [ ! -f "$TEMP_FILE" ]; then
-    echo "Error: Could not create temporary file."
-    exit 1
+# Ensure script is run with sudo
+if [[ $EUID -ne 0 ]]; then
+   echo "Please run as root"
+   exit 1
 fi
 
-# --- 1. Generate the new content into the temporary file ---
+# Backup hosts file
+cp /etc/hosts /etc/hosts.bak
 
-# 1.1. Use a single sed command pipeline to process the file:
-# a) Delete any lines that contain the new localhost IP (127.0.0.2) or facebook.com.
-# b) For the line starting with 127.0.0.1, remove 'localhost' from it.
-# c) Print all remaining lines (all lines except those deleted).
-# The output is redirected to the temporary file.
-sed "/^${NEW_LOCALHOST_IP}[[:space:]]\+${NEW_LOCALHOST_NAME}/d; /${NEW_FACEBOOK_NAME}/d; /^127\.0\.0\.1/ s/\(\<localhost\>\)\(\s\+\)\?//" "$HOSTS_FILE" > "$TEMP_FILE"
+# Replace localhost with 127.0.0.2
+sed -i 's/^127\.0\.0\.1\s\+localhost/127.0.0.2 localhost/' /etc/hosts
 
-# 1.2. Append the required new entries to the temporary file
-# Add the new localhost entry: 127.0.0.2 localhost.
-echo -e "${NEW_LOCALHOST_IP}\t${NEW_LOCALHOST_NAME}" >> "$TEMP_FILE"
-
-# Add the new facebook.com entry: 8.8.8.8 facebook.com.
-echo -e "${NEW_FACEBOOK_IP}\t${NEW_FACEBOOK_NAME}" >> "$TEMP_FILE"
-
-# --- 2. Replace the original hosts file with the temporary one ---
-
-# This step requires root privileges and performs the actual change.
-# We use 'cat' to overwrite the content safely.
-if cat "$TEMP_FILE" > "$HOSTS_FILE"; then
-    echo "Host resolution updated successfully"
-    echo "Please check 'ping localhost' and 'ping facebook.com'."
+# Add or replace facebook.com
+if grep -q "facebook.com" /etc/hosts; then
+    sed -i 's/.*facebook.com/8.8.8.8 facebook.com/' /etc/hosts
 else
-    echo "Error: Failed to overwrite $HOSTS_FILE. You may lack sufficient privileges."
-    rm "$TEMP_FILE"
-    exit 1
+    echo "8.8.8.8 facebook.com" >> /etc/hosts
+fi
