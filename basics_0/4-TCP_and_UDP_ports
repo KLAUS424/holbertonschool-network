@@ -1,5 +1,52 @@
 #!/usr/bin/env bash
-# 4-TCP_and_UDP_ports
-# Display listening TCP/UDP sockets with PID and program name
 
-ss -tulpn
+# This script displays all active listening network sockets (TCP, UDP, and UNIX),
+# showing the PID and program name associated with each socket.
+# Note: Running netstat with the -p option often requires root privileges (sudo).
+
+echo "Active Internet connections (only servers)"
+# Display listening TCP and UDP sockets (-lntu) along with PID and Program Name (-p).
+# We filter the output using awk to match the requested format and headers.
+netstat -lntup 2>/dev/null | awk '
+/^Proto/ {
+    # Print the custom header
+    printf "%s %s %s %s %s %s %s\n", $1, $2, $3, $4, $5, $6, "PID/Program name"
+    next
+}
+/^(tcp|udp|tcp6|udp6)/ {
+    # Check if the last field is in the format "PID/ProgramName"
+    if ($NF ~ /^[0-9]+\/.*$/) {
+        # Print the relevant fields for TCP/UDP connections
+        printf "%s %s %s %s %s %s %s\n", $1, $2, $3, $4, $5, $6, $NF
+    }
+}'
+
+echo ""
+echo "Active UNIX domain sockets (only servers)"
+# Display listening UNIX sockets (-lx) along with PID and Program Name (-p).
+netstat -lxp 2>/dev/null | awk '
+/^Proto/ {
+    # Print the custom header for UNIX sockets
+    printf "%s %s %s %s %s %s %s %s\n", $1, $2, $3, $4, $5, $6, "PID/Program name", "Path"
+    next
+}
+/^(unix)/ {
+    # netstat output for UNIX sockets is structured differently.
+    # We look for the PID/Program name field and the Path field (the last field).
+    pid_prog = ""
+    path = ""
+
+    # Iterate through fields to find the PID/Program name (e.g., 518/rpcbind)
+    for (i = 8; i <= NF; i++) {
+        if ($i ~ /^[0-9]+\/.*$/) {
+            pid_prog = $i
+            path = $(i + 1)
+            break
+        }
+    }
+
+    if (pid_prog != "") {
+        # Print the relevant fields for UNIX connections
+        printf "%s %s %s %s %s %s %s %s\n", $1, $2, $3, $4, $5, $6, pid_prog, path
+    }
+}'
