@@ -1,41 +1,51 @@
 #!/usr/bin/env bash
 # This script displays all active listening network sockets (TCP, UDP, and UNIX),
 # showing the PID and program name associated with each socket.
-# Note: Running netstat with the -p option often requires root privileges (sudo).
+# Note: To correctly display PID and Program names (-p flag), this script often requires root privileges (sudo).
 
 echo "Active Internet connections (only servers)"
-# Display listening TCP and UDP sockets (-lntu) along with PID and Program Name (-p).
-# We filter the output using awk to match the requested format and headers.
+# Command: netstat -lntup
+# -l : listening sockets only
+# -n : numerical addresses (ports/IPs)
+# -t : TCP connections
+# -u : UDP connections
+# -p : show PID and Program name (requires elevated privileges, e.g., sudo)
+# 2>/dev/null: suppress potential permission errors from -p
+
 netstat -lntup 2>/dev/null | awk '
 /^Proto/ {
-    # Print the custom header
+    # Print a custom header matching the required example format
     printf "%s %s %s %s %s %s %s\n", $1, $2, $3, $4, $5, $6, "PID/Program name"
     next
 }
 /^(tcp|udp|tcp6|udp6)/ {
-    # Check if the last field is in the format "PID/ProgramName"
+    # Filter for internet connections (TCP/UDP)
+    # If the PID/Program name exists (i.e., it is the last field $NF), print the line.
     if ($NF ~ /^[0-9]+\/.*$/) {
-        # Print the relevant fields for TCP/UDP connections
+        # For UDP lines, $6 is typically empty, but netstat spacing allows for columnar output.
         printf "%s %s %s %s %s %s %s\n", $1, $2, $3, $4, $5, $6, $NF
     }
 }'
 
 echo ""
 echo "Active UNIX domain sockets (only servers)"
-# Display listening UNIX sockets (-lx) along with PID and Program Name (-p).
+# Command: netstat -lxp
+# -l : listening sockets only
+# -x : UNIX domain sockets
+# -p : show PID and Program name
+
 netstat -lxp 2>/dev/null | awk '
 /^Proto/ {
-    # Print the custom header for UNIX sockets
+    # Print a custom header for UNIX sockets
     printf "%s %s %s %s %s %s %s %s\n", $1, $2, $3, $4, $5, $6, "PID/Program name", "Path"
     next
 }
 /^(unix)/ {
-    # netstat output for UNIX sockets is structured differently.
-    # We look for the PID/Program name field and the Path field (the last field).
+    # Unix socket output is structured differently. We search for the PID/Program name field.
     pid_prog = ""
     path = ""
 
-    # Iterate through fields to find the PID/Program name (e.g., 518/rpcbind)
+    # Iterate through fields starting from the 8th column to find the PID/Program name (e.g., 518/rpcbind)
     for (i = 8; i <= NF; i++) {
         if ($i ~ /^[0-9]+\/.*$/) {
             pid_prog = $i
@@ -45,7 +55,7 @@ netstat -lxp 2>/dev/null | awk '
     }
 
     if (pid_prog != "") {
-        # Print the relevant fields for UNIX connections
+        # Print the relevant fields
         printf "%s %s %s %s %s %s %s %s\n", $1, $2, $3, $4, $5, $6, pid_prog, path
     }
 }'
