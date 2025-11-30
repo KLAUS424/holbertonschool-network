@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # 5-is_the_host_on_the_network
 
 # Check if an argument is provided
@@ -7,5 +7,5 @@ if [ $# -ne 1 ]; then
     exit 1
 fi
 
-# Ping the IP address 5 times
-ping -c 5 $1
+# Ping the IP address 5 times, properly quoted
+ping -c 5 "$1"
