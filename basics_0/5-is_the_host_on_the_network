@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 # This script checks if a host is reachable on the network using the ping command.
 # It requires an IP address or hostname as an argument.
 
