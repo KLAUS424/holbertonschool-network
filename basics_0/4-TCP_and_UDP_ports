@@ -2,5 +2,5 @@
 # 4-TCP_and_UDP_ports
 # Display listening TCP/UDP sockets with PID and program name
 
-sudo netstat -tuln
+sudo netstat -l -p
 
